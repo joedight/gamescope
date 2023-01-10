@@ -2235,9 +2235,11 @@ paint_all(bool async)
 				// Just draw focused window as normal, be it Steam or the game
 				paint_window(w, w, &frameInfo, global_focus.cursor, PaintWindowFlag::BasePlane | PaintWindowFlag::DrawBorders, 1.0f, override);
 
-				bool needsScaling = frameInfo.layers[0].scale.x < 0.999f && frameInfo.layers[0].scale.y < 0.999f;
-				frameInfo.useFSRLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::FSR && needsScaling;
-				frameInfo.useNISLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::NIS && needsScaling;
+				bool needsUpscaling = frameInfo.layers[0].scale.x < 0.999f && frameInfo.layers[0].scale.y < 0.999f;
+				bool needsDownscaling = frameInfo.layers[0].scale.x > 1.001f && frameInfo.layers[0].scale.y > 1.001f;
+				frameInfo.useBICUBICLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::BICUBIC && needsDownscaling;
+				frameInfo.useFSRLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::FSR && needsUpscaling;
+				frameInfo.useNISLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::NIS && needsUpscaling;
 			}
 			update_touch_scaling( &frameInfo );
 		}
@@ -2339,6 +2341,7 @@ paint_all(bool async)
 			frameInfo.blurRadius = ratio * g_BlurRadius;
 		}
 
+		frameInfo.useBICUBICLayer0 = false;
 		frameInfo.useFSRLayer0 = false;
 		frameInfo.useNISLayer0 = false;
 	}
@@ -2385,6 +2388,7 @@ paint_all(bool async)
 	bNeedsComposite |= bWasFirstFrame;
 	bNeedsComposite |= frameInfo.useFSRLayer0;
 	bNeedsComposite |= frameInfo.useNISLayer0;
+	bNeedsComposite |= frameInfo.useBICUBICLayer0;
 	bNeedsComposite |= frameInfo.blurLayer0;
 	bNeedsComposite |= bNeedsNearest;
 	bNeedsComposite |= bDrewCursor;

@@ -1,0 +1,97 @@
+#version 460
+
+#extension GL_GOOGLE_include_directive : require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+
+#include "descriptor_set.h"
+
+layout(
+  local_size_x = 64,
+  local_size_y = 1,
+  local_size_z = 1) in;
+
+layout(push_constant)
+uniform layers_t {
+    uvec4 c1, c2, c3, c4;
+};
+
+#define A_GPU 1
+#define A_GLSL 1
+#define A_HALF 1
+#include "ffx_a.h"
+#include "bicubic.h"
+
+vec4 cubic(float v)
+{
+    vec4 n = vec4(1.0, 2.0, 3.0, 4.0) - v;
+    vec4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4.0 * s.x;
+    float z = s.z - 4.0 * s.y + 6.0 * s.x;
+    float w = 6.0 - x - y - z;
+    return vec4(x, y, z, w) * (1.0/6.0);
+}
+
+vec4 textureBicubic(sampler2D splr, vec2 texCoords)
+{
+
+   vec2 texSize = textureSize(splr, 0);
+   vec2 invTexSize = 1.0 / texSize;
+   
+   texCoords = texCoords * texSize - 0.5;
+
+   
+    vec2 fxy = fract(texCoords);
+    texCoords -= fxy;
+
+    vec4 xcubic = cubic(fxy.x);
+    vec4 ycubic = cubic(fxy.y);
+
+    vec4 c = texCoords.xxyy + vec2 (-0.5, +1.5).xyxy;
+    
+    vec4 s = vec4(xcubic.xz + xcubic.yw, ycubic.xz + ycubic.yw);
+    vec4 offset = c + vec4 (xcubic.yw, ycubic.yw) / s;
+    
+    offset *= invTexSize.xxyy;
+    
+    vec4 sample0 = texture(splr, offset.xz);
+    vec4 sample1 = texture(splr, offset.yz);
+    vec4 sample2 = texture(splr, offset.xw);
+    vec4 sample3 = texture(splr, offset.yw);
+
+    float sx = s.x / (s.x + s.y);
+    float sy = s.z / (s.z + s.w);
+
+    return mix(
+       mix(sample3, sample2, sx), mix(sample1, sample0, sx)
+    , sy);
+}
+
+void bicPass(uvec2 pos)
+{
+    AF3 color;
+
+    AF2 pp=AF2(pos)*AF2_AU2(c1.xy)+AF2_AU2(c1.zw);
+    AF2 fp=floor(pp);
+    pp-=fp;
+    AF2 p0=fp*AF2_AU2(c2.xy)+AF2_AU2(c2.zw);
+    vec4 bic = textureBicubic(s_samplers[0], p0);
+    imageStore(dst, ivec2(pos), bic);
+}
+
+
+
+void main()
+{
+    // AMD recommends to use this swizzle and to process 4 pixel per invocation
+    // for better cache utilisation
+    uvec2 pos = ARmp8x8(gl_LocalInvocationID.x) + uvec2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
+
+    bicPass(pos);
+    pos.x += 8u;
+    bicPass(pos);
+    pos.y += 8u;
+    bicPass(pos);
+    pos.x -= 8u;
+    bicPass(pos);
+}
