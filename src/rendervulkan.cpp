@@ -3394,10 +3394,16 @@ struct BicubicPushData_t
 	uvec4_t Const1;
 	uvec4_t Const2;
 	uvec4_t Const3;
+	uvec4_t Const4;
+	uvec4_t Const5;
+	uvec4_t Const6;
+	uvec4_t Const7;
+	uvec4_t Const8;
+	uvec4_t Const9;
 
 	BicubicPushData_t(uint32_t inputX, uint32_t inputY, uint32_t tempX, uint32_t tempY)
 	{
-		BicubicCon(&Const0.x, &Const1.x, &Const2.x, &Const3.x, inputX, inputY, inputX, inputY, tempX, tempY);
+		BicubicCon(&Const0.x, &Const1.x, &Const2.x, &Const3.x, &Const4.x, &Const5.x, &Const6.x, &Const7.x, &Const8.x, &Const9.x, inputX, inputY, inputX, inputY, tempX, tempY);
 	}
 };
 
@@ -3503,6 +3509,17 @@ bool vulkan_composite( const struct FrameInfo_t *frameInfo, std::shared_ptr<CVul
 	for (uint32_t i = 0; i < EOTF_Count; i++)
 		cmdBuffer->bindColorMgmtLuts(i, frameInfo->shaperLut[i], frameInfo->lut3D[i]);
 
+	auto fsrBind = [&]( uint32_t inputX, uint32_t inputY, uint32_t tempX, uint32_t tempY )
+	{
+			cmdBuffer->bindPipeline(g_device.pipeline(SHADER_TYPE_EASU));
+			cmdBuffer->bindTarget(g_output.tmpOutput);
+			cmdBuffer->bindTexture(0, frameInfo->layers[0].tex);
+			cmdBuffer->setTextureSrgb(0, true);
+			cmdBuffer->setSamplerUnnormalized(0, false);
+			cmdBuffer->setSamplerNearest(0, false);
+			cmdBuffer->pushConstants<EasuPushData_t>(inputX, inputY, tempX, tempY);
+	};
+
 	if ( frameInfo->useBICUBICLayer0 )
 	{
 		uint32_t inputX = frameInfo->layers[0].tex->width();
@@ -3513,13 +3530,20 @@ bool vulkan_composite( const struct FrameInfo_t *frameInfo, std::shared_ptr<CVul
 
 		update_tmp_images(tempX, tempY);
 
-		cmdBuffer->bindPipeline(g_device.pipeline(SHADER_TYPE_BICUBIC));
-		cmdBuffer->bindTarget(g_output.tmpOutput);
-		cmdBuffer->bindTexture(0, frameInfo->layers[0].tex);
-		cmdBuffer->setTextureSrgb(0, true);
-		cmdBuffer->setSamplerUnnormalized(0, false);
-		cmdBuffer->setSamplerNearest(0, false);
-		cmdBuffer->pushConstants<BicubicPushData_t>(inputX, inputY, tempX, tempY);
+		if ( (inputY / tempY) < 2 )
+		{
+			fsrBind(inputX, inputY, tempX, tempY);
+		}
+		else
+		{
+			cmdBuffer->bindPipeline(g_device.pipeline(SHADER_TYPE_BICUBIC));
+			cmdBuffer->bindTarget(g_output.tmpOutput);
+			cmdBuffer->bindTexture(0, frameInfo->layers[0].tex);
+			cmdBuffer->setTextureSrgb(0, true);
+			cmdBuffer->setSamplerUnnormalized(0, false);
+			cmdBuffer->setSamplerNearest(0, false);
+			cmdBuffer->pushConstants<BicubicPushData_t>(inputX, inputY, tempX, tempY);
+		} // else
 
 		int pixelsPerGroup = 16;
 
@@ -3546,13 +3570,7 @@ bool vulkan_composite( const struct FrameInfo_t *frameInfo, std::shared_ptr<CVul
 
 		update_tmp_images(tempX, tempY);
 
-		cmdBuffer->bindPipeline(g_device.pipeline(SHADER_TYPE_EASU));
-		cmdBuffer->bindTarget(g_output.tmpOutput);
-		cmdBuffer->bindTexture(0, frameInfo->layers[0].tex);
-		cmdBuffer->setTextureSrgb(0, true);
-		cmdBuffer->setSamplerUnnormalized(0, false);
-		cmdBuffer->setSamplerNearest(0, false);
-		cmdBuffer->pushConstants<EasuPushData_t>(inputX, inputY, tempX, tempY);
+		fsrBind(inputX, inputY, tempX, tempY);
 
 		int pixelsPerGroup = 16;
 

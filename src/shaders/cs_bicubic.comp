@@ -1,3 +1,7 @@
+// References
+// https://www.codeproject.com/Articles/236394/Bi-Cubic-and-Bi-Linear-Interpolation-with-GLSL
+// https://stackoverflow.com/questions/13501081/efficient-bicubic-filtering-code-in-glsl
+
 #version 460
 
 #extension GL_GOOGLE_include_directive : require
@@ -12,7 +16,7 @@ layout(
 
 layout(push_constant)
 uniform layers_t {
-    uvec4 c1, c2, c3, c4;
+    uvec4 c0, c1, c2, c3, c4, c5, c6, c7, c8, c9;
 };
 
 #define A_GPU 1
@@ -71,14 +75,64 @@ void bicPass(uvec2 pos)
 {
     AF3 color;
 
-    AF2 pp=AF2(pos)*AF2_AU2(c1.xy)+AF2_AU2(c1.zw);
+    AF2 pp=AF2(pos)*AF2_AU2(c0.xy)+AF2_AU2(c0.zw);
     AF2 fp=floor(pp);
     pp-=fp;
-    AF2 p0=fp*AF2_AU2(c2.xy)+AF2_AU2(c2.zw);
-    vec4 bic = textureBicubic(s_samplers[0], p0);
-    imageStore(dst, ivec2(pos), bic);
-}
+    AF2 p0=fp*AF2_AU2(c1.xy)+AF2_AU2(c1.zw);
+    AF2 p1=p0+AF2_AU2(c2.xy);
+    AF2 p2=p0+AF2_AU2(c2.zw);
+    AF2 p3=p0+AF2_AU2(c3.xy);
+    AF2 p4=p0+AF2_AU2(c3.zw);
+    AF2 p5=p0+AF2_AU2(c4.xy);
+    AF2 p6=p0+AF2_AU2(c4.zw);
+    AF2 p7=p0+AF2_AU2(c5.xy);
+    AF2 p8=p0+AF2_AU2(c5.zw);
+    AF2 p9=p0+AF2_AU2(c6.xy);
+    AF2 p10=p0+AF2_AU2(c6.zw);
+    AF2 p11=p0+AF2_AU2(c7.xy);
+    AF2 p12=p0+AF2_AU2(c7.zw);
+    AF2 p13=p0+AF2_AU2(c8.xy);
+    AF2 p14=p0+AF2_AU2(c8.zw);
+    AF2 p15=p0+AF2_AU2(c9.xy);
 
+    vec4 bic0 = textureBicubic(s_samplers[0], p0);
+    vec4 bic1 = textureBicubic(s_samplers[0], p1);
+    vec4 bic2 = textureBicubic(s_samplers[0], p2);
+    vec4 bic3 = textureBicubic(s_samplers[0], p3);
+    vec4 bic4 = textureBicubic(s_samplers[0], p4);
+    vec4 bic5 = textureBicubic(s_samplers[0], p5);
+    vec4 bic6 = textureBicubic(s_samplers[0], p6);
+    vec4 bic7 = textureBicubic(s_samplers[0], p7);
+    vec4 bic8 = textureBicubic(s_samplers[0], p8);
+    vec4 bic9  = textureBicubic(s_samplers[0], p9);
+    vec4 bic10 = textureBicubic(s_samplers[0], p10);
+    vec4 bic11 = textureBicubic(s_samplers[0], p11);
+    vec4 bic12 = textureBicubic(s_samplers[0], p12);
+    vec4 bic13 = textureBicubic(s_samplers[0], p13);
+    vec4 bic14 = textureBicubic(s_samplers[0], p14);
+    vec4 bic15 = textureBicubic(s_samplers[0], p15);
+
+    if ( AF1_AU1(c0[1]) >= 4 )
+    {
+        // 4x4 bicubic
+        imageStore(dst, ivec2(pos),
+        (bic4+bic8+bic0+bic1+bic6+bic3+bic5+bic7+bic2+bic9+bic10+bic11+bic12+bic13+bic14+bic15)/16);
+    }
+    else if ( AF1_AU1(c0[1]) >= 3 )
+    {
+        // 3x3 bicubic
+        imageStore(dst, ivec2(pos),
+        (bic0+bic1+bic2+bic4+bic5+bic6+bic8+bic9+bic10)/9);
+    }
+    else
+    {
+        // 2x2 bicubic
+        imageStore(dst, ivec2(pos), (bic0+bic1+bic4+bic5)/4);
+        // imageStore(dst, ivec2(pos), textureBilinear(s_samplers[0], p1));
+        // imageStore(dst, ivec2(pos), texture(s_samplers[0], p1));
+        // imageStore(dst, ivec2(pos), texture(s_samplers[0], vec2(0.0,0.0)));
+    }
+}
 
 
 void main()
