@@ -25,11 +25,17 @@ extern bool g_bGrabbed;
 
 enum class GamescopeUpscaleFilter : uint32_t
 {
-    LINEAR = 0,
-    NEAREST,
+    BLIT = 0,
+    LINEAR,
     BICUBIC,
     FSR,
     NIS
+};
+
+enum class GamescopeTextureMode : uint32_t
+{
+    LINEAR = 0,
+    NEAREST,
 };
 
 enum class GamescopeUpscaleScaler : uint32_t
@@ -43,8 +49,10 @@ enum class GamescopeUpscaleScaler : uint32_t
 
 extern GamescopeUpscaleFilter g_upscaleFilter;
 extern GamescopeUpscaleScaler g_upscaleScaler;
+extern GamescopeTextureMode g_textureMode;
 extern GamescopeUpscaleFilter g_wantedUpscaleFilter;
 extern GamescopeUpscaleScaler g_wantedUpscaleScaler;
+extern GamescopeTextureMode g_wantedTextureMode;
 extern int g_upscaleFilterSharpness;
 
 extern bool g_bBorderlessOutputWindow;

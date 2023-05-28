@@ -247,10 +247,12 @@ bool g_bIsNested = false;
 
 bool g_bGrabbed = false;
 
-GamescopeUpscaleFilter g_upscaleFilter = GamescopeUpscaleFilter::LINEAR;
+GamescopeUpscaleFilter g_upscaleFilter = GamescopeUpscaleFilter::BLIT;
+GamescopeTextureMode g_textureMode = GamescopeTextureMode::LINEAR;
 GamescopeUpscaleScaler g_upscaleScaler = GamescopeUpscaleScaler::AUTO;
 
-GamescopeUpscaleFilter g_wantedUpscaleFilter = GamescopeUpscaleFilter::LINEAR;
+GamescopeUpscaleFilter g_wantedUpscaleFilter = GamescopeUpscaleFilter::BLIT;
+GamescopeTextureMode g_wantedTextureMode = GamescopeTextureMode::LINEAR;
 GamescopeUpscaleScaler g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
 int g_upscaleFilterSharpness = 2;
 
@@ -462,7 +464,7 @@ int main(int argc, char **argv)
 				g_wantedUpscaleScaler = GamescopeUpscaleScaler::INTEGER;
 				break;
 			case 'n':
-				g_wantedUpscaleFilter = GamescopeUpscaleFilter::NEAREST;
+				g_wantedTextureMode = GamescopeTextureMode::NEAREST;
 				break;
 			case 'D':
 				g_wantedUpscaleFilter = GamescopeUpscaleFilter::BICUBIC;

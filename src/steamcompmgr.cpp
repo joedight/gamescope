@@ -2087,7 +2087,7 @@ paint_window(steamcompmgr_win_t *w, steamcompmgr_win_t *scaleW, struct FrameInfo
 	layer->tex = lastCommit->vulkanTex;
 	layer->fbid = lastCommit->fb_id;
 
-	layer->linearFilter = (w->isOverlay || w->isExternalOverlay) ? true : g_upscaleFilter != GamescopeUpscaleFilter::NEAREST;
+	layer->linearFilter = (w->isOverlay || w->isExternalOverlay) ? true : g_textureMode == GamescopeTextureMode::LINEAR;
 	layer->colorspace = lastCommit->colorspace();
 
 	if ( flags & PaintWindowFlag::BasePlane )
@@ -2237,9 +2237,10 @@ paint_all(bool async)
 
 				bool needsUpscaling = frameInfo.layers[0].scale.x < 0.999f && frameInfo.layers[0].scale.y < 0.999f;
 				bool needsDownscaling = frameInfo.layers[0].scale.x > 1.001f && frameInfo.layers[0].scale.y > 1.001f;
-				frameInfo.useBICUBICLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::BICUBIC && needsDownscaling;
-				frameInfo.useFSRLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::FSR && needsUpscaling;
-				frameInfo.useNISLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::NIS && needsUpscaling;
+				frameInfo.useLINEARLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::LINEAR;
+				frameInfo.useBICUBICLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::BICUBIC;
+				frameInfo.useFSRLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::FSR;
+				frameInfo.useNISLayer0 = g_upscaleFilter == GamescopeUpscaleFilter::NIS;
 			}
 			update_touch_scaling( &frameInfo );
 		}
@@ -2379,7 +2380,7 @@ paint_all(bool async)
 	if ( !BIsNested() && g_nOutputRefresh != nTargetRefresh && g_uDynamicRefreshEqualityTime + g_uDynamicRefreshDelay < now )
 		drm_set_refresh( &g_DRM, nTargetRefresh );
 
-	bool bNeedsNearest = g_upscaleFilter == GamescopeUpscaleFilter::NEAREST && frameInfo.layers[0].scale.x != 1.0f && frameInfo.layers[0].scale.y != 1.0f;
+	bool bNeedsNearest = g_textureMode == GamescopeTextureMode::NEAREST && frameInfo.layers[0].scale.x != 1.0f && frameInfo.layers[0].scale.y != 1.0f;
 
 
 	bool bNeedsComposite = BIsNested();
@@ -4879,22 +4880,27 @@ handle_property_notify(xwayland_ctx_t *ctx, XPropertyEvent *ev)
 		default:
 		case 0:
 			g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
-			g_wantedUpscaleFilter = GamescopeUpscaleFilter::LINEAR;
+			g_wantedUpscaleFilter = GamescopeUpscaleFilter::BLIT;
+			g_wantedTextureMode = GamescopeTextureMode::LINEAR;
 			break;
 		case 1:
 			g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
-			g_wantedUpscaleFilter = GamescopeUpscaleFilter::NEAREST;
+			g_wantedUpscaleFilter = GamescopeUpscaleFilter::BLIT;
+			g_wantedTextureMode = GamescopeTextureMode::NEAREST;
 			break;
 		case 2:
 			g_wantedUpscaleScaler = GamescopeUpscaleScaler::INTEGER;
-			g_wantedUpscaleFilter = GamescopeUpscaleFilter::NEAREST;
+			g_wantedUpscaleFilter = GamescopeUpscaleFilter::BLIT;
+			g_wantedTextureMode = GamescopeTextureMode::NEAREST;
 			break;
 		case 3:
 			g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
+			g_wantedTextureMode = GamescopeTextureMode::LINEAR;
 			g_wantedUpscaleFilter = GamescopeUpscaleFilter::FSR;
 			break;
 		case 4:
 			g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
+			g_wantedTextureMode = GamescopeTextureMode::LINEAR;
 			g_wantedUpscaleFilter = GamescopeUpscaleFilter::NIS;
 			break;
 		}
@@ -7125,12 +7131,14 @@ steamcompmgr_main(int argc, char **argv)
 		if ( window_is_steam( global_focus.focusWindow ) )
 		{
 			g_upscaleScaler = GamescopeUpscaleScaler::FIT;
-			g_upscaleFilter = GamescopeUpscaleFilter::LINEAR;
+			g_upscaleFilter = GamescopeUpscaleFilter::BLIT;
+			g_textureMode = GamescopeTextureMode::LINEAR;
 		}
 		else
 		{
 			g_upscaleScaler = g_wantedUpscaleScaler;
 			g_upscaleFilter = g_wantedUpscaleFilter;
+			g_textureMode = g_wantedTextureMode;
 		}
 
 		static int nIgnoredOverlayRepaints = 0;

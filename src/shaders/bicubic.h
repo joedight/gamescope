@@ -38,12 +38,11 @@ AF1 outputSizeInPixelsY)
  // Input/Output size information
  con0[0]=AU1_AF1(inputViewportInPixelsX*ARcpF1(outputSizeInPixelsX));
  con0[1]=AU1_AF1(inputViewportInPixelsY*ARcpF1(outputSizeInPixelsY));
+
  con0[2]=AU1_AF1(AF1_(0.5)*inputViewportInPixelsX*ARcpF1(outputSizeInPixelsX)-AF1_(0.5));
  con0[3]=AU1_AF1(AF1_(0.5)*inputViewportInPixelsY*ARcpF1(outputSizeInPixelsY)-AF1_(0.5));
  // Viewport pixel position to normalized image space.
  // This is used to get upper-left of 'F' tap.
- con1[0]=AU1_AF1(ARcpF1(inputSizeInPixelsX));
- con1[1]=AU1_AF1(ARcpF1(inputSizeInPixelsY));
  // Centers of gather4, first offset from upper-left of 'F'.
  //          +---+---+---+---+---+---+---+---+
  //          |   |   |   |   |   |   |   |   |
@@ -63,13 +62,24 @@ AF1 outputSizeInPixelsY)
  //          | m |   | n |   | o |   | p |   |
  //          +---+---+---+---+---+---+---+---+
 
- con1[2]=AU1_AF1(AF1_( 1.0)*ARcpF1(inputSizeInPixelsX));
- con1[3]=AU1_AF1(AF1_(-1.0)*ARcpF1(inputSizeInPixelsY));
+ con1[0]=AU1_AF1(ARcpF1(inputSizeInPixelsX));
+ con1[1]=AU1_AF1(ARcpF1(inputSizeInPixelsY));
+
+
+ con2[0]=AU1_AF1(AF1_( 0.5)*ARcpF1(inputSizeInPixelsX));
+ con2[1]=AU1_AF1(AF1_( 0.5)*ARcpF1(inputSizeInPixelsY));
+
+ con1[2]=AU1_AF1(AF1_( 0.5)*ARcpF1(inputSizeInPixelsX));
+ con1[3]=AU1_AF1(AF1_(-0.5)*ARcpF1(inputSizeInPixelsY));
+
+ con3[2]=AU1_AF1(AF1_(-0.5)*ARcpF1(inputSizeInPixelsX));
+ con3[3]=AU1_AF1(AF1_( 0.5)*ARcpF1(inputSizeInPixelsY));
+
+ con4[0]=AU1_AF1(AF1_(-0.5)*ARcpF1(inputSizeInPixelsX));
+ con4[1]=AU1_AF1(AF1_(-0.5)*ARcpF1(inputSizeInPixelsY));
 
  // These are from (0) instead of 'F'.
  // coords for b c d
- con2[0]=AU1_AF1(AF1_(-2.0)*ARcpF1(inputSizeInPixelsX));
- con2[1]=AU1_AF1(AF1_( 0.0)*ARcpF1(inputSizeInPixelsY));
 
  con2[2]=AU1_AF1(AF1_( 2.0)*ARcpF1(inputSizeInPixelsX));
  con2[3]=AU1_AF1(AF1_( 0.0)*ARcpF1(inputSizeInPixelsY));
@@ -78,11 +88,7 @@ AF1 outputSizeInPixelsY)
  con3[1]=AU1_AF1(AF1_( 0.0)*ARcpF1(inputSizeInPixelsY));
 
  // coords for e f g h
- con3[2]=AU1_AF1(AF1_(-2.0)*ARcpF1(inputSizeInPixelsX));
- con3[3]=AU1_AF1(AF1_( 2.0)*ARcpF1(inputSizeInPixelsY));
 
- con4[0]=AU1_AF1(AF1_( 0.0)*ARcpF1(inputSizeInPixelsX));
- con4[1]=AU1_AF1(AF1_( 2.0)*ARcpF1(inputSizeInPixelsY));
 
  con4[2]=AU1_AF1(AF1_( 2.0)*ARcpF1(inputSizeInPixelsX));
  con4[3]=AU1_AF1(AF1_( 2.0)*ARcpF1(inputSizeInPixelsY));

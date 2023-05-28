@@ -228,22 +228,25 @@ void inputSDLThreadRun( void )
 							SDL_SetWindowFullscreen( g_SDLWindow, g_bFullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0 );
 							break;
 						case KEY_N:
-							g_wantedUpscaleFilter = GamescopeUpscaleFilter::NEAREST;
+							g_wantedTextureMode = GamescopeTextureMode::NEAREST;
+							break;
+						case KEY_L:
+							g_wantedTextureMode = GamescopeTextureMode::LINEAR;
 							break;
 						case KEY_B:
+							g_wantedUpscaleFilter = GamescopeUpscaleFilter::BLIT;
+							break;
+						case KEY_J:
 							g_wantedUpscaleFilter = GamescopeUpscaleFilter::LINEAR;
 							break;
 						case KEY_K:
-							g_wantedUpscaleFilter = (g_wantedUpscaleFilter == GamescopeUpscaleFilter::BICUBIC) ?
-								GamescopeUpscaleFilter::LINEAR : GamescopeUpscaleFilter::BICUBIC;
+							g_wantedUpscaleFilter = GamescopeUpscaleFilter::BICUBIC;
 							break;
 						case KEY_U:
-							g_wantedUpscaleFilter = (g_wantedUpscaleFilter == GamescopeUpscaleFilter::FSR) ?
-								GamescopeUpscaleFilter::LINEAR : GamescopeUpscaleFilter::FSR;
+							g_wantedUpscaleFilter = GamescopeUpscaleFilter::FSR;
 							break;
 						case KEY_Y:
-							g_wantedUpscaleFilter = (g_wantedUpscaleFilter == GamescopeUpscaleFilter::NIS) ? 
-								GamescopeUpscaleFilter::LINEAR : GamescopeUpscaleFilter::NIS;
+							g_wantedUpscaleFilter = GamescopeUpscaleFilter::NIS;
 							break;
 						case KEY_I:
 							g_upscaleFilterSharpness = std::min(20, g_upscaleFilterSharpness + 1);
