@@ -1,0 +1,59 @@
+#version 450
+
+#extension GL_GOOGLE_include_directive : enable
+#extension GL_EXT_scalar_block_layout : require
+
+#include "descriptor_set.h"
+
+layout(
+  local_size_x = 8,
+  local_size_y = 8,
+  local_size_z = 1) in;
+
+layout(binding = 0, scalar)
+uniform const_buffer
+{
+    uvec2 in_dim;
+    uvec2 tmp_dim;
+};
+
+void box(uvec2 upos)
+{
+    vec2 pos_n = (vec2(upos) + vec2(0.5, 0.5)) / tmp_dim;
+    vec2 in_pitch = vec2(1.0, 1.0) / in_dim;
+    vec2 scale = in_dim / tmp_dim;
+
+    vec2 p0 = pos_n - (in_pitch * floor(scale * 0.5f));
+    vec2 edge_fact = fract(scale * 0.5f);
+    vec3 acc = vec3(0.0f);
+
+    for (int ix = 0; ix < ceil(scale.x - 0.01f); ix++) {
+	for (int iy = 0; iy < ceil(scale.y - .01f); iy++) {
+	    float fact = 1.f;
+	    if (fract(scale.x) > .01f) {
+		if (ix == 0) {
+		    fact *= edge_fact.x;
+		} else if (ix == ceil(scale.x) - 1) {
+		    fact *= 1.f - edge_fact.x;
+		}
+	    }
+	    if (fract(scale.y) > .01f) {
+		if (iy == 0) {
+		    fact *= edge_fact.y;
+		} else if (iy == ceil(scale.y) - 1) {
+		    fact *= 1.f - edge_fact.y;
+		}
+	    }
+	    vec2 spos = p0 + (in_pitch * vec2(ix, iy));
+	    acc += texture(s_samplers[0], spos).rgb * fact;
+	}
+    }
+    imageStore(dst, ivec2(upos), vec4(acc / (ceil(scale.x) * ceil(scale.y)), 1.f));
+}
+
+void main()
+{
+    uvec2 coord = uvec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    box(coord);
+}
+

@@ -49,11 +49,19 @@ enum class GamescopeUpscaleScaler : uint32_t
     STRETCH,
 };
 
+enum class GamescopeDownscaleFilter : uint32_t
+{
+    BOX = 0,
+};
+
 extern GamescopeUpscaleFilter g_upscaleFilter;
 extern GamescopeUpscaleScaler g_upscaleScaler;
 extern GamescopeUpscaleFilter g_wantedUpscaleFilter;
 extern GamescopeUpscaleScaler g_wantedUpscaleScaler;
 extern int g_upscaleFilterSharpness;
+
+extern GamescopeDownscaleFilter g_downscaleFilter;
+extern GamescopeDownscaleFilter g_wantedDownscaleFilter;
 
 extern bool g_bBorderlessOutputWindow;
 

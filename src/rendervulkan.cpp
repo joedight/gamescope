@@ -47,6 +47,7 @@
 #include "cs_nis.h"
 #include "cs_nis_fp16.h"
 #include "cs_rgb_to_nv12.h"
+#include "cs_box.h"
 
 #define A_CPU
 #include "shaders/ffx_a.h"
@@ -890,6 +891,7 @@ bool CVulkanDevice::createShaders()
 	SHADER(BLUR_COND, cs_composite_blur_cond);
 	SHADER(BLUR_FIRST_PASS, cs_gaussian_blur_horizontal);
 	SHADER(RCAS, cs_composite_rcas);
+	SHADER(BOX, cs_box);
 	if (m_bSupportsFp16)
 	{
 		SHADER(EASU, cs_easu_fp16);
@@ -1131,6 +1133,7 @@ void CVulkanDevice::compileAllPipelines()
 	SHADER(EASU, 1, 1, 1);
 	SHADER(NIS, 1, 1, 1);
 	SHADER(RGB_TO_NV12, 1, 1, 1);
+	SHADER(BOX, 1, 1, 1);
 #undef SHADER
 
 	for (auto& info : pipelineInfos) {
@@ -3621,6 +3624,18 @@ struct NisPushData_t
 			tempX, tempY);
 	}
 };
+
+struct BoxPushData_t
+{
+	uvec2_t inputDim;
+	uvec2_t tmpDim;
+
+	BoxPushData_t(uint32_t inputX, uint32_t inputY, uint32_t tempX, uint32_t tempY)
+		: inputDim(inputX, inputY), tmpDim(tempX, tempY)
+	{ }
+
+};
+
 #pragma pack(pop)
 
 void bind_all_layers(CVulkanCmdBuffer* cmdBuffer, const struct FrameInfo_t *frameInfo)
@@ -3776,6 +3791,42 @@ std::optional<uint64_t> vulkan_composite( struct FrameInfo_t *frameInfo, gamesco
 		cmdBuffer->setSamplerNearest(0, false);
 		cmdBuffer->bindTarget(compositeImage);
 		cmdBuffer->uploadConstants<RcasPushData_t>(frameInfo, g_upscaleFilterSharpness / 10.0f);
+
+		cmdBuffer->dispatch(div_roundup(currentOutputWidth, pixelsPerGroup), div_roundup(currentOutputHeight, pixelsPerGroup));
+	}
+	else if ( frameInfo->useBoxLayer0 )
+	{
+		uint32_t inputX = frameInfo->layers[0].tex->width();
+		uint32_t inputY = frameInfo->layers[0].tex->height();
+
+		uint32_t tempX = frameInfo->layers[0].integerWidth();
+		uint32_t tempY = frameInfo->layers[0].integerHeight();
+
+		update_tmp_images(tempX, tempY);
+
+		cmdBuffer->bindPipeline(g_device.pipeline(SHADER_TYPE_BOX));
+		cmdBuffer->bindTarget(g_output.tmpOutput);
+		cmdBuffer->bindTexture(0, frameInfo->layers[0].tex);
+		cmdBuffer->setTextureSrgb(0, true);
+		cmdBuffer->setSamplerUnnormalized(0, false);
+		cmdBuffer->setSamplerNearest(0, false);
+		cmdBuffer->uploadConstants<BoxPushData_t>(inputX, inputY, tempX, tempY);
+
+		int pixelsPerGroup = 8;
+
+		cmdBuffer->dispatch(div_roundup(tempX, pixelsPerGroup), div_roundup(tempY, pixelsPerGroup));
+
+		struct FrameInfo_t boxFrameInfo = *frameInfo;
+		boxFrameInfo.layers[0].tex = g_output.tmpOutput;
+		boxFrameInfo.layers[0].scale.x = 1.0f;
+		boxFrameInfo.layers[0].scale.y = 1.0f;
+
+		cmdBuffer->bindPipeline( g_device.pipeline(SHADER_TYPE_BLIT, boxFrameInfo.layerCount, boxFrameInfo.ycbcrMask(), 0u, boxFrameInfo.colorspaceMask(), outputTF ));
+		bind_all_layers(cmdBuffer.get(), &boxFrameInfo);
+		cmdBuffer->bindTarget(compositeImage);
+		cmdBuffer->uploadConstants<BlitPushData_t>(&boxFrameInfo);
+
+		pixelsPerGroup = 8;
 
 		cmdBuffer->dispatch(div_roundup(currentOutputWidth, pixelsPerGroup), div_roundup(currentOutputHeight, pixelsPerGroup));
 	}

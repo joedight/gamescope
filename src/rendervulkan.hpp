@@ -267,6 +267,7 @@ struct FrameInfo_t
 {
 	bool useFSRLayer0;
 	bool useNISLayer0;
+	bool useBoxLayer0;
 	bool bFadingOut;
 	BlurMode blurLayer0;
 	int blurRadius;
@@ -528,6 +529,7 @@ enum ShaderType {
 	SHADER_TYPE_RCAS,
 	SHADER_TYPE_NIS,
 	SHADER_TYPE_RGB_TO_NV12,
+	SHADER_TYPE_BOX,
 
 	SHADER_TYPE_COUNT
 };

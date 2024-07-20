@@ -292,7 +292,11 @@ GamescopeUpscaleScaler g_upscaleScaler = GamescopeUpscaleScaler::AUTO;
 
 GamescopeUpscaleFilter g_wantedUpscaleFilter = GamescopeUpscaleFilter::LINEAR;
 GamescopeUpscaleScaler g_wantedUpscaleScaler = GamescopeUpscaleScaler::AUTO;
+
 int g_upscaleFilterSharpness = 2;
+
+GamescopeDownscaleFilter g_downscaleFilter = GamescopeDownscaleFilter::BOX;
+GamescopeDownscaleFilter g_wantedDownscaleFilter = GamescopeDownscaleFilter::BOX;
 
 gamescope::GamescopeModeGeneration g_eGamescopeModeGeneration = gamescope::GAMESCOPE_MODE_GENERATE_CVT;
 
